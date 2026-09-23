@@ -2,16 +2,17 @@
 	<img src="Thumb.png" alt="FlyerGen thumbnail" width="240">
 </p>
 
-# FlyerGen
+# FlyerGen Multi
 
-FlyerGen is a small browser-based tool for creating event and course flyers from a single form.
+FlyerGen Multi is a small browser-based tool for building a single flyer that advertises six courses at once.
 
 It lets you:
-- enter a title, date, location, description, and link
-- generate a QR code for the link
-- choose a background image or color
+- set a programme title, shown in the large diamond device
+- enter a title, short description, date, location, and booking link for each of six courses
+- generate an individual QR code per course from its booking link
+- choose a background image or color behind the diamond and course cards
 - preview the finished flyer live
-- export the flyer as a PNG image
+- export the flyer as a JPEG image
 
 ## Usage
 

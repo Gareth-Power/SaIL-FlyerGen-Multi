@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SaIL FlyerGen — Foundations in Patient Safety</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SaIL FlyerGen Multi — Course Programme</title>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-svg@1.1.0/lib/qrcode.js"></script>
-<link href="quill.snow.local.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
 <style>
   /* ── Reset ── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -76,6 +78,24 @@
     color: var(--magenta);
     border-bottom: 1px solid #f0e0ea;
     padding-bottom: 8px;
+  }
+
+  .course-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+    background: #fdfbfc;
+    border: 1px solid #f0e0ea;
+    border-radius: 10px;
+  }
+
+  .course-group h3 {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--magenta);
   }
 
   .field {
@@ -153,45 +173,14 @@
     width: 100%;
   }
 
+  .course-group .field input {
+    background: #fff;
+  }
+
   .field input:focus,
   .field textarea:focus {
     border-color: var(--magenta);
     box-shadow: 0 0 0 3px rgba(214,22,140,0.12);
-  }
-
-  /* Quill overrides */
-  #inp-desc-editor .ql-toolbar {
-    border: 1.5px solid #e0ccd8;
-    border-bottom: none;
-    border-radius: 8px 8px 0 0;
-    background: #f9f4f7;
-    padding: 6px 8px;
-  }
-
-  #inp-desc-editor {
-    --desc-editor-font-size: 13px;
-  }
-
-  #inp-desc-editor .ql-container {
-    border: 1.5px solid #e0ccd8;
-    border-radius: 0 0 8px 8px;
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-size: var(--desc-editor-font-size);
-    color: var(--ink);
-    min-height: 240px;
-    max-height: 480px;
-    overflow-y: auto;
-  }
-
-  #inp-desc-editor .ql-editor {
-    min-height: 240px;
-    line-height: 1.6;
-    padding: 10px 12px;
-  }
-
-  #inp-desc-editor .ql-editor.ql-blank::before {
-    color: #b0a0b0;
-    font-style: normal;
   }
 
   .bg-grid {
@@ -242,21 +231,6 @@
 
   .bg-upload-btn svg { pointer-events: none; }
 
-  #inp-desc-editor .ql-toolbar button:hover,
-  #inp-desc-editor .ql-toolbar button.ql-active {
-    color: var(--magenta);
-  }
-
-  #inp-desc-editor .ql-toolbar button:hover .ql-stroke,
-  #inp-desc-editor .ql-toolbar button.ql-active .ql-stroke {
-    stroke: var(--magenta);
-  }
-
-  #inp-desc-editor .ql-toolbar button:hover .ql-fill,
-  #inp-desc-editor .ql-toolbar button.ql-active .ql-fill {
-    fill: var(--magenta);
-  }
-
   .field .hint {
     font-size: 11px;
     color: #a090a0;
@@ -300,17 +274,26 @@
   /* ── Preview area ── */
   .preview-area {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: safe center;
+    justify-content: safe center;
     padding: 40px;
     background: #3b3b3b;
-    overflow-y: auto;
+    overflow: auto;
     height: 100%;
   }
 
+  /* Wraps .flyer so its layout box matches the scaled-down visual size on
+     narrow screens — a CSS transform shrinks only the paint, not the box a
+     flex parent centers against, which is what threw the flyer off-centre. */
+  .flyer-scale-wrap {
+    flex-shrink: 0;
+    width: fit-content;
+    height: fit-content;
+  }
+
   .flyer {
-    width: 210mm;
-    height: 148mm;
+    width: 297mm;
+    height: 210mm;
     background: #fff;
     position: relative;
     overflow: hidden;
@@ -318,15 +301,15 @@
     flex-shrink: 0;
   }
 
-  .image {
+  .bg-layer {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, #fce4f1 0%, #f7c8e0 50%, #efb7d6 100%);
+    background: #FCE0EB;
     overflow: hidden;
     z-index: 0;
   }
 
-  .image img {
+  .bg-layer img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -335,224 +318,199 @@
     transform: scale(1.08);
   }
 
-  .image::after {
-    content: '';
+  /* ── Hero diamond, bled off the top-left corner ── */
+  .diamond-mega {
     position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.12) 100%);
-    pointer-events: none;
-  }
-
-  .diamond {
-    position: absolute;
-    top: 50%;
-    left: 50mm;
-    width: 92mm;
-    height: 92mm;
+    left: 40mm;
+    top: 21mm;
+    width: 180mm;
+    height: 180mm;
     transform: translate(-50%, -50%) rotate(45deg);
     background: linear-gradient(135deg, var(--magenta) 0%, var(--pink-2) 100%);
-    border-radius: 8mm;
-    filter: drop-shadow(0 20px 30px rgba(214, 22, 140, 0.55)) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.2));
-    z-index: 2;
+    border-radius: 15.7mm;
+    filter: drop-shadow(0 7mm 10.5mm rgba(214, 22, 140, 0.4));
+    z-index: 1;
   }
 
-  .logo {
+  /* ── Programme title + logo, centred between the top edge and the course grid ── */
+  .programme-title-wrap {
     position: absolute;
-    top: 9mm;
-    right: 4mm;
-    width: 82mm;
-    z-index: 4;
+    left: 10.5mm;
+    top: 0;
+    height: 56mm;
+    width: 114mm;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    /* Backstop for a title so long it bottoms out the autofit in app.js —
+       clip it here rather than let it run over the logo. */
+    overflow: hidden;
   }
 
-  .logo img {
+  .programme-title-wrap h1 {
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: #fff;
+    font-size: 42px;
+  }
+
+  .logo-wrap {
+    position: absolute;
+    top: 0;
+    right: 10.5mm;
+    height: 56mm;
+    width: 79mm;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+  }
+
+  .logo-wrap img {
     width: 100%;
     height: auto;
     display: block;
     filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
   }
 
-  .title-wrap {
+  /* ── Course grid ── */
+  .course-grid {
     position: absolute;
-    top: 54%;
-    left: 50mm;
-    transform: translate(-50%, -50%);
-    width: 72mm;
-    text-align: center;
-    color: #fff;
-    z-index: 3;
-    display: flex;
-    flex-direction: column;
+    left: 10.5mm;
+    right: 10.5mm;
+    top: 56mm;
+    bottom: 10.5mm;
+    z-index: 4;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 6.5mm;
   }
 
-  .title-box {
-    min-height: 68px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: visible;
-  }
-
-  .subtitle-box {
-    min-height: 20px;
-    margin-top: 2mm;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .subtitle-box.is-empty {
-    display: none;
-  }
-
-  .subtitle {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-style: italic;
-    font-size: 15px;
-    line-height: 1.12;
-    letter-spacing: 0.01em;
-    color: rgba(255,255,255,0.96);
-  }
-
-  h1 {
-    font-weight: 800;
-    font-size: 30px;
-    line-height: 1.06;
-    letter-spacing: -0.025em;
-    color: #fff;
-  }
-
-  .meta {
-    margin-top: 7mm;
-    padding-top: 5mm;
-    border-top: 1px solid rgba(255,255,255,0.45);
-    display: flex;
-    justify-content: space-around;
-    gap: 4mm;
-  }
-
-  .meta-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5mm;
-  }
-
-  .meta-label {
-    font-size: 7px;
-    font-weight: 700;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.75);
-  }
-
-  .meta-value {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-style: italic;
-    font-size: 13px;
-    color: #fff;
-    line-height: 1.1;
-  }
-
-  .qr {
-    margin: 5mm auto 0;
-    width: 22mm;
-    height: 22mm;
+  .course-card {
+    position: relative;
     background: #fff;
-    padding: 1.5mm;
-    border-radius: 1mm;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .qr canvas, .qr img {
-    width: 100% !important;
-    height: 100% !important;
-    display: block;
-  }
-
-  .qr-label {
-    margin-top: 2mm;
-    font-size: 6.5px;
-    font-weight: 700;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.85);
-  }
-
-  .panel {
-    position: absolute;
-    top: 48mm;
-    right: 0;
-    bottom: 0;
-    width: 90mm;
-    background: rgba(255, 255, 255, 0.88);
-    font-size: 10px;
-    padding: 10mm 11mm;
+    border-radius: 16px;
+    box-shadow: 0 0 0 1px #D8DDE0, 0 2px 4px rgba(33,43,50,.04), 0 12px 28px rgba(33,43,50,.05);
+    padding: 5mm 5.3mm;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: none;
-    filter: drop-shadow(-12px 10px 18px rgba(0, 0, 0, 0.18)) drop-shadow(-3px 0 10px rgba(214, 22, 140, 0.12));
-    isolation: isolate;
-    z-index: 1;
   }
 
-  .panel > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  .panel::before {
-    content: '';
+  /* Width is pinned to the code itself so the caption can't widen the column
+     and run under the course title. */
+  .qr-mini {
     position: absolute;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    pointer-events: none;
-    z-index: 0;
+    top: 4mm;
+    right: 4mm;
+    width: 13mm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8mm;
   }
 
-  .panel::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 14px;
-    background: rgba(255, 255, 255, 0.96);
-    pointer-events: none;
-    z-index: 0;
+  .qr-mini.is-empty { visibility: hidden; }
+
+  /* The 1mm inset is the quiet zone: scanners need ~4 clear modules around
+     the symbol, and nothing may clip the three corner finder patterns. */
+  .qr-mini-box {
+    width: 13mm;
+    height: 13mm;
+    background: #fff;
+    padding: 1mm;
+    box-shadow: 0 0 0 1px #D8DDE0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .panel p {
-    font-size: inherit;
-    line-height: 1.6;
-    color: var(--soft);
+  .qr-mini-box svg { width: 100% !important; height: 100% !important; display: block; }
+
+  .qr-mini-label {
+    font-size: 5.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+    text-align: center;
+    text-transform: uppercase;
+    color: #8d6c7f;
+  }
+
+  .accent-rule {
+    width: 11.5mm;
+    height: 1.3mm;
+    border-radius: 0.8mm;
+    background: var(--magenta);
     margin-bottom: 3mm;
-    word-break: break-word;
-    overflow-wrap: break-word;
+    flex-shrink: 0;
   }
 
-  .panel p:last-of-type { margin-bottom: 0; }
-
-  .panel ol, .panel ul {
-    font-size: inherit;
-    line-height: 1.6;
-    color: var(--soft);
-    margin-bottom: 3mm;
-    padding-left: 4mm;
+  .course-title {
+    font-weight: 800;
+    font-size: 17px;
+    line-height: 1.2;
+    color: var(--ink);
+    padding-right: 16mm;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  .panel li { margin-bottom: 1mm; }
+  .course-desc {
+    font-size: var(--course-desc-size, 12px);
+    line-height: 1.4;
+    color: #4C6272;
+    margin-top: 1.6mm;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 
-  .panel strong { font-weight: 700; color: var(--ink); }
-  .panel em { font-style: italic; }
+  .course-desc.is-empty { display: none; }
+
+  .card-spacer { flex-grow: 1; }
+
+  .card-meta {
+    border-top: 1px solid #D8DDE0;
+    margin-top: 2.6mm;
+    padding-top: 2.6mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .card-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 1.3mm;
+    min-width: 0;
+  }
+
+  .card-meta-item svg { flex-shrink: 0; }
+
+  .card-meta-item span {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* fitFlyerToPreview() in app.js sets the actual scale — it measures the
+     preview pane, which is the real constraint (viewport minus the sidebar),
+     not the viewport width a breakpoint would see. */
+  .flyer { transform-origin: top left; }
 
   @media (max-width: 1100px) {
     .generator-body { grid-template-columns: 1fr; }
     .preview-area { padding: 24px 16px; }
-    .flyer { transform: scale(0.55); transform-origin: top center; }
   }
 </style>
 </head>
@@ -563,48 +521,178 @@
   <!-- ── Sidebar ── -->
   <aside class="sidebar">
     <header class="generator-header">
-      <div><h1>SaIL FlyerGen</h1></div>
+      <div><h1>SaIL FlyerGen Multi</h1></div>
     </header>
     <div class="sidebar-fields">
-    <h2>Event Details</h2>
+    <h2>Programme</h2>
 
     <div class="field">
-      <label for="inp-title">Course Title</label>
-      <input type="text" id="inp-title" placeholder="e.g. Foundations in Patient Safety" autocomplete="off">
-    </div>
-
-    <div class="field">
-      <label for="inp-subtitle">Course Subtitle</label>
-      <input type="text" id="inp-subtitle" placeholder="e.g. A practical introduction for new starters" autocomplete="off">
-    </div>
-
-    <div class="field">
-      <label for="inp-date">Date</label>
-      <input type="text" id="inp-date" placeholder="e.g. 14 July 2026" autocomplete="off">
-    </div>
-
-    <div class="field">
-      <label for="inp-location">Location</label>
-      <input type="text" id="inp-location" placeholder="e.g. SaIL Centre, St Thomas' Hospital" autocomplete="off">
-    </div>
-
-    <div class="field">
-      <label for="inp-url">Booking URL</label>
-      <input type="text" id="inp-url" placeholder="https://…" autocomplete="off">
-      <span class="hint">Used to generate the QR code on the flyer.</span>
+      <label for="inp-programme-title">Programme Title</label>
+      <input type="text" id="inp-programme-title" placeholder="e.g. SaIL Course Programme" autocomplete="off">
+      <span class="hint">Shown in the large diamond, top-left of the flyer.</span>
     </div>
 
     <div class="field">
       <div class="field-label-row">
-        <label>Description</label>
-        <div class="text-size-controls" aria-label="Description text size controls">
-          <span class="text-size-label">Text Size</span>
+        <label>Course Description Text Size</label>
+        <div class="text-size-controls" aria-label="Course description text size controls">
           <button class="text-size-btn" id="desc-size-decrease-btn" type="button" aria-label="Decrease description text size">-</button>
           <button class="text-size-btn" id="desc-size-increase-btn" type="button" aria-label="Increase description text size">+</button>
         </div>
       </div>
-      <div id="inp-desc-editor"></div>
-      <span class="hint">Formatted text will appear in the white panel on the flyer.</span>
+      <span class="hint">Applies to all six course descriptions at once.</span>
+    </div>
+
+    <h2 style="margin-top:4px">Courses</h2>
+
+    <div class="course-group" data-course="1">
+      <h3>Course 1</h3>
+      <div class="field">
+        <label for="inp-c1-title">Course Title</label>
+        <input type="text" id="inp-c1-title" placeholder="e.g. Foundations in Patient Safety" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c1-desc">Short Description</label>
+        <input type="text" id="inp-c1-desc" placeholder="One short line about the course" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c1-date">Date</label>
+        <input type="text" id="inp-c1-date" placeholder="e.g. 14 Oct" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c1-location">Location</label>
+        <input type="text" id="inp-c1-location" placeholder="e.g. SaIL Centre" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c1-url">Booking URL</label>
+        <input type="text" id="inp-c1-url" placeholder="https://…" autocomplete="off">
+        <span class="hint">Generates this course's own QR code.</span>
+      </div>
+    </div>
+
+    <div class="course-group" data-course="2">
+      <h3>Course 2</h3>
+      <div class="field">
+        <label for="inp-c2-title">Course Title</label>
+        <input type="text" id="inp-c2-title" placeholder="e.g. Human Factors in Clinical Practice" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c2-desc">Short Description</label>
+        <input type="text" id="inp-c2-desc" placeholder="One short line about the course" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c2-date">Date</label>
+        <input type="text" id="inp-c2-date" placeholder="e.g. 21 Oct" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c2-location">Location</label>
+        <input type="text" id="inp-c2-location" placeholder="e.g. SaIL Centre" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c2-url">Booking URL</label>
+        <input type="text" id="inp-c2-url" placeholder="https://…" autocomplete="off">
+        <span class="hint">Generates this course's own QR code.</span>
+      </div>
+    </div>
+
+    <div class="course-group" data-course="3">
+      <h3>Course 3</h3>
+      <div class="field">
+        <label for="inp-c3-title">Course Title</label>
+        <input type="text" id="inp-c3-title" placeholder="e.g. Crisis Resource Management" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c3-desc">Short Description</label>
+        <input type="text" id="inp-c3-desc" placeholder="One short line about the course" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c3-date">Date</label>
+        <input type="text" id="inp-c3-date" placeholder="e.g. 4 Nov" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c3-location">Location</label>
+        <input type="text" id="inp-c3-location" placeholder="e.g. Via Teams" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c3-url">Booking URL</label>
+        <input type="text" id="inp-c3-url" placeholder="https://…" autocomplete="off">
+        <span class="hint">Generates this course's own QR code.</span>
+      </div>
+    </div>
+
+    <div class="course-group" data-course="4">
+      <h3>Course 4</h3>
+      <div class="field">
+        <label for="inp-c4-title">Course Title</label>
+        <input type="text" id="inp-c4-title" placeholder="e.g. Difficult Airway Management" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c4-desc">Short Description</label>
+        <input type="text" id="inp-c4-desc" placeholder="One short line about the course" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c4-date">Date</label>
+        <input type="text" id="inp-c4-date" placeholder="e.g. 11 Nov" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c4-location">Location</label>
+        <input type="text" id="inp-c4-location" placeholder="e.g. SaIL Centre" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c4-url">Booking URL</label>
+        <input type="text" id="inp-c4-url" placeholder="https://…" autocomplete="off">
+        <span class="hint">Generates this course's own QR code.</span>
+      </div>
+    </div>
+
+    <div class="course-group" data-course="5">
+      <h3>Course 5</h3>
+      <div class="field">
+        <label for="inp-c5-title">Course Title</label>
+        <input type="text" id="inp-c5-title" placeholder="e.g. Neonatal Resuscitation Skills" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c5-desc">Short Description</label>
+        <input type="text" id="inp-c5-desc" placeholder="One short line about the course" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c5-date">Date</label>
+        <input type="text" id="inp-c5-date" placeholder="e.g. 18 Nov" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c5-location">Location</label>
+        <input type="text" id="inp-c5-location" placeholder="e.g. SaIL Centre" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c5-url">Booking URL</label>
+        <input type="text" id="inp-c5-url" placeholder="https://…" autocomplete="off">
+        <span class="hint">Generates this course's own QR code.</span>
+      </div>
+    </div>
+
+    <div class="course-group" data-course="6">
+      <h3>Course 6</h3>
+      <div class="field">
+        <label for="inp-c6-title">Course Title</label>
+        <input type="text" id="inp-c6-title" placeholder="e.g. Simulation-Based Team Training" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c6-desc">Short Description</label>
+        <input type="text" id="inp-c6-desc" placeholder="One short line about the course" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c6-date">Date</label>
+        <input type="text" id="inp-c6-date" placeholder="e.g. 2 Dec" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c6-location">Location</label>
+        <input type="text" id="inp-c6-location" placeholder="e.g. SaIL Centre" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inp-c6-url">Booking URL</label>
+        <input type="text" id="inp-c6-url" placeholder="https://…" autocomplete="off">
+        <span class="hint">Generates this course's own QR code.</span>
+      </div>
     </div>
 
     <h2 style="margin-top:4px">Appearance</h2>
@@ -641,7 +729,7 @@
         </label>
         <input type="file" id="inp-bg" accept="image/*" style="display:none">
       </div>
-      <span class="hint">Select a preset or upload your own image.</span>
+      <span class="hint">Select a preset or upload your own image. Applies behind the diamond and cards.</span>
     </div>
 
     <div class="btn-row">
@@ -653,45 +741,155 @@
 
   <!-- ── Preview ── -->
   <main class="preview-area">
+    <div class="flyer-scale-wrap">
     <article class="flyer" id="flyer">
 
-      <div class="image">
+      <div class="bg-layer" id="bg-layer">
         <img src="" alt="" id="bg-img">
       </div>
 
-      <div class="logo">
-        <img src="Sail_NEW3.png" alt="Simulation &amp; Interactive Learning — Guy's &amp; St Thomas', London">
+      <div class="diamond-mega"></div>
+
+      <div class="programme-title-wrap">
+        <h1 id="out-programme-title"></h1>
       </div>
 
-      <div class="diamond"></div>
-
-      <div class="title-wrap">
-      <div class="title-box">
-          <h1 id="out-title"></h1>
-        </div>
-
-        <div class="subtitle-box is-empty" id="out-subtitle-box">
-          <div class="subtitle" id="out-subtitle"></div>
-        </div>
-
-        <div class="meta">
-          <div class="meta-item">
-            <span class="meta-label">Date</span>
-            <span class="meta-value" id="out-date">TBC</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Location</span>
-            <span class="meta-value" id="out-location">TBC</span>
-          </div>
-        </div>
-
-        <div class="qr" id="out-qr"></div>
-        <div class="qr-label">Scan to book</div>
+      <div class="logo-wrap">
+        <img src="SaIL-logo-colour.png" alt="Simulation &amp; Interactive Learning — Guy's &amp; St Thomas', London">
       </div>
 
-      <div class="panel" id="out-panel"></div>
+      <div class="course-grid" id="course-grid">
+
+        <div class="course-card" data-course="1">
+          <div class="qr-mini is-empty" data-qr="1">
+            <div class="qr-mini-box"></div>
+            <div class="qr-mini-label">Scan to book</div>
+          </div>
+          <div class="accent-rule"></div>
+          <h3 class="course-title" data-out="c1-title"></h3>
+          <p class="course-desc is-empty" data-out="c1-desc"></p>
+          <div class="card-spacer"></div>
+          <div class="card-meta">
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+              <span data-out="c1-date">TBC</span>
+            </div>
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><path d="M12 21s7-6.5 7-11.5a7 7 0 1 0-14 0C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+              <span data-out="c1-location">TBC</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="course-card" data-course="2">
+          <div class="qr-mini is-empty" data-qr="2">
+            <div class="qr-mini-box"></div>
+            <div class="qr-mini-label">Scan to book</div>
+          </div>
+          <div class="accent-rule"></div>
+          <h3 class="course-title" data-out="c2-title"></h3>
+          <p class="course-desc is-empty" data-out="c2-desc"></p>
+          <div class="card-spacer"></div>
+          <div class="card-meta">
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+              <span data-out="c2-date">TBC</span>
+            </div>
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><path d="M12 21s7-6.5 7-11.5a7 7 0 1 0-14 0C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+              <span data-out="c2-location">TBC</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="course-card" data-course="3">
+          <div class="qr-mini is-empty" data-qr="3">
+            <div class="qr-mini-box"></div>
+            <div class="qr-mini-label">Scan to book</div>
+          </div>
+          <div class="accent-rule"></div>
+          <h3 class="course-title" data-out="c3-title"></h3>
+          <p class="course-desc is-empty" data-out="c3-desc"></p>
+          <div class="card-spacer"></div>
+          <div class="card-meta">
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+              <span data-out="c3-date">TBC</span>
+            </div>
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><path d="M12 21s7-6.5 7-11.5a7 7 0 1 0-14 0C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+              <span data-out="c3-location">TBC</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="course-card" data-course="4">
+          <div class="qr-mini is-empty" data-qr="4">
+            <div class="qr-mini-box"></div>
+            <div class="qr-mini-label">Scan to book</div>
+          </div>
+          <div class="accent-rule"></div>
+          <h3 class="course-title" data-out="c4-title"></h3>
+          <p class="course-desc is-empty" data-out="c4-desc"></p>
+          <div class="card-spacer"></div>
+          <div class="card-meta">
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+              <span data-out="c4-date">TBC</span>
+            </div>
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><path d="M12 21s7-6.5 7-11.5a7 7 0 1 0-14 0C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+              <span data-out="c4-location">TBC</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="course-card" data-course="5">
+          <div class="qr-mini is-empty" data-qr="5">
+            <div class="qr-mini-box"></div>
+            <div class="qr-mini-label">Scan to book</div>
+          </div>
+          <div class="accent-rule"></div>
+          <h3 class="course-title" data-out="c5-title"></h3>
+          <p class="course-desc is-empty" data-out="c5-desc"></p>
+          <div class="card-spacer"></div>
+          <div class="card-meta">
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+              <span data-out="c5-date">TBC</span>
+            </div>
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><path d="M12 21s7-6.5 7-11.5a7 7 0 1 0-14 0C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+              <span data-out="c5-location">TBC</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="course-card" data-course="6">
+          <div class="qr-mini is-empty" data-qr="6">
+            <div class="qr-mini-box"></div>
+            <div class="qr-mini-label">Scan to book</div>
+          </div>
+          <div class="accent-rule"></div>
+          <h3 class="course-title" data-out="c6-title"></h3>
+          <p class="course-desc is-empty" data-out="c6-desc"></p>
+          <div class="card-spacer"></div>
+          <div class="card-meta">
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+              <span data-out="c6-date">TBC</span>
+            </div>
+            <div class="card-meta-item">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><path d="M12 21s7-6.5 7-11.5a7 7 0 1 0-14 0C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+              <span data-out="c6-location">TBC</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
 
     </article>
+    </div>
   </main>
 
 </div>
@@ -699,4 +897,3 @@
 <script src="app.js"></script>
 </body>
 </html>
-

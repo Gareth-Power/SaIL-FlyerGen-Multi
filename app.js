@@ -1,28 +1,10 @@
-const inpTitle = document.getElementById('inp-title');
-const inpSubtitle = document.getElementById('inp-subtitle');
-const inpDate = document.getElementById('inp-date');
-const inpLocation = document.getElementById('inp-location');
-const inpUrl = document.getElementById('inp-url');
+const COURSE_NUMBERS = [1, 2, 3, 4, 5, 6];
+const COURSE_FIELDS = ['title', 'desc', 'date', 'location'];
 
-const quill = new Quill('#inp-desc-editor', {
-  theme: 'snow',
-  placeholder: 'Enter description text…',
-  modules: {
-    toolbar: [
-      ['bold', 'italic', 'underline'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['clean']
-    ]
-  }
-});
+const inpProgrammeTitle = document.getElementById('inp-programme-title');
+const outProgrammeTitle = document.getElementById('out-programme-title');
+const programmeTitleWrap = document.querySelector('.programme-title-wrap');
 
-const outTitle = document.getElementById('out-title');
-const outSubtitle = document.getElementById('out-subtitle');
-const outSubtitleBox = document.getElementById('out-subtitle-box');
-const outDate = document.getElementById('out-date');
-const outLocation = document.getElementById('out-location');
-const outQr = document.getElementById('out-qr');
-const outPanel = document.getElementById('out-panel');
 const downloadImageBtn = document.getElementById('download-image-btn');
 const resetFormBtn = document.getElementById('reset-form-btn');
 const descSizeDecreaseBtn = document.getElementById('desc-size-decrease-btn');
@@ -31,92 +13,86 @@ const inpBg = document.getElementById('inp-bg');
 const bgGrid = document.getElementById('bg-grid');
 const colorGrid = document.getElementById('color-grid');
 const bgImage = document.querySelector('#bg-img');
-const imageDiv = document.querySelector('.image');
+const bgLayer = document.querySelector('#bg-layer');
+const flyerEl = document.getElementById('flyer');
+const flyerScaleWrap = document.querySelector('.flyer-scale-wrap');
+const previewArea = document.querySelector('.preview-area');
 const transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
 let backgroundLoadToken = 0;
 let descriptionSizeStep = 0;
 
-function escapeHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// The flyer is a fixed 297x210mm block, so it has to be scaled down to fit the
+// preview pane. A CSS transform shrinks only the paint, not the layout box the
+// flex parent centres against, so the wrapper is resized to match.
+function fitFlyerToPreview() {
+  const flyerWidth = flyerEl.offsetWidth;
+  const flyerHeight = flyerEl.offsetHeight;
+
+  if (!flyerWidth || !flyerHeight) {
+    return;
+  }
+
+  const styles = window.getComputedStyle(previewArea);
+  const availableWidth = previewArea.clientWidth
+    - parseFloat(styles.paddingLeft)
+    - parseFloat(styles.paddingRight);
+  // Height comes from the viewport rather than the pane: the pane is
+  // content-sized in the stacked layout, so measuring it here would feed the
+  // wrapper size we're about to set back into the next calculation.
+  const availableHeight = window.innerHeight
+    - parseFloat(styles.paddingTop)
+    - parseFloat(styles.paddingBottom);
+  const scale = Math.min(1, availableWidth / flyerWidth, availableHeight / flyerHeight);
+
+  flyerEl.style.transform = 'scale(' + scale + ')';
+  flyerScaleWrap.style.width = (flyerWidth * scale) + 'px';
+  flyerScaleWrap.style.height = (flyerHeight * scale) + 'px';
 }
 
-function updateTitle() {
-  const val = inpTitle.value.trim();
-  const parts = val ? val.split(/\s+in\s+/i) : [];
-  if (parts.length >= 2) {
-    outTitle.innerHTML = escapeHtml(parts[0]) + ' in<br>' + escapeHtml(parts.slice(1).join(' in '));
+function updateProgrammeTitle() {
+  const val = inpProgrammeTitle.value.trim();
+  outProgrammeTitle.textContent = val;
+
+  outProgrammeTitle.style.fontSize = '42px';
+  let size = 42;
+  const maxHeight = programmeTitleWrap.clientHeight;
+  const maxWidth = programmeTitleWrap.clientWidth;
+  // Width matters as much as height: a long unbreakable word keeps the heading
+  // one line tall while pushing it out of the band and over the logo.
+  while (size > 16 && (outProgrammeTitle.scrollHeight > maxHeight || outProgrammeTitle.offsetWidth > maxWidth)) {
+    size -= 1;
+    outProgrammeTitle.style.fontSize = size + 'px';
+  }
+}
+
+function updateCourseField(courseNum, field) {
+  const input = document.getElementById('inp-c' + courseNum + '-' + field);
+  const out = document.querySelector('[data-out="c' + courseNum + '-' + field + '"]');
+  const val = input.value.trim();
+
+  if (field === 'date' || field === 'location') {
+    out.textContent = val || 'TBC';
+  } else if (field === 'desc') {
+    out.textContent = val;
+    out.classList.toggle('is-empty', !val);
   } else {
-    outTitle.textContent = val;
-  }
-
-  outTitle.style.fontSize = '30px';
-  let size = 30;
-  while (size > 10 && outTitle.offsetHeight > 68) {
-    size -= 1;
-    outTitle.style.fontSize = size + 'px';
+    out.textContent = val;
   }
 }
 
-function updateSubtitle() {
-  const val = inpSubtitle.value.trim();
-  outSubtitle.textContent = val;
-  outSubtitleBox.classList.toggle('is-empty', !val);
+function updateQrForCourse(courseNum) {
+  const urlInput = document.getElementById('inp-c' + courseNum + '-url');
+  const url = urlInput.value.trim();
+  const qrWrap = document.querySelector('.qr-mini[data-qr="' + courseNum + '"]');
+  const qrBox = qrWrap.querySelector('.qr-mini-box');
+  qrBox.innerHTML = '';
 
-  if (!val) {
+  if (!url) {
+    qrWrap.classList.add('is-empty');
     return;
   }
 
-  // The diamond narrows quickly away from its centre, so the subtitle is
-  // kept to a single short line by shrinking it (never wrapping wide) before
-  // it's allowed to push the meta row and QR code further down the taper.
-  outSubtitle.style.fontSize = '15px';
-  let size = 15;
-  while (size > 9 && outSubtitle.offsetHeight > 20) {
-    size -= 1;
-    outSubtitle.style.fontSize = size + 'px';
-  }
-}
-
-function updateDate() {
-  const val = inpDate.value.trim();
-  outDate.textContent = val || 'TBC';
-}
-
-function updateLocation() {
-  const val = inpLocation.value.trim();
-  outLocation.textContent = val || 'TBC';
-}
-
-function updateDescription() {
-  const text = quill.getText().trim();
-  const html = quill.getSemanticHTML();
-  outPanel.innerHTML = text.length === 0 ? '' : html;
-}
-
-function applyDescriptionTextSize() {
-  const editorSize = 13 + descriptionSizeStep;
-  const panelSize = 10 + descriptionSizeStep;
-  document.getElementById('inp-desc-editor').style.setProperty('--desc-editor-font-size', editorSize + 'px');
-  outPanel.style.fontSize = panelSize + 'px';
-  descSizeDecreaseBtn.disabled = descriptionSizeStep <= -3;
-  descSizeIncreaseBtn.disabled = descriptionSizeStep >= 6;
-}
-
-function changeDescriptionTextSize(delta) {
-  const nextStep = Math.max(-3, Math.min(6, descriptionSizeStep + delta));
-  if (nextStep === descriptionSizeStep) {
-    return;
-  }
-
-  descriptionSizeStep = nextStep;
-  applyDescriptionTextSize();
-}
-
-function updateQr() {
-  const url = inpUrl.value.trim();
-  outQr.innerHTML = '';
-
-  if (!url) return;
+  qrWrap.classList.remove('is-empty');
 
   const svg = new QRCode({
     content: url,
@@ -128,18 +104,33 @@ function updateQr() {
     join: true,
     padding: 0
   }).svg();
-  outQr.innerHTML = svg;
-  const svgEl = outQr.querySelector('svg');
+  qrBox.innerHTML = svg;
+  const svgEl = qrBox.querySelector('svg');
   if (svgEl) {
     if (!svgEl.getAttribute('viewBox')) {
       svgEl.setAttribute('viewBox', '0 0 256 256');
     }
     svgEl.removeAttribute('width');
     svgEl.removeAttribute('height');
-    svgEl.style.width = '100%';
-    svgEl.style.height = '100%';
     svgEl.style.display = 'block';
   }
+}
+
+function applyDescriptionTextSize() {
+  const size = 12 + descriptionSizeStep;
+  flyerEl.style.setProperty('--course-desc-size', size + 'px');
+  descSizeDecreaseBtn.disabled = descriptionSizeStep <= -4;
+  descSizeIncreaseBtn.disabled = descriptionSizeStep >= 6;
+}
+
+function changeDescriptionTextSize(delta) {
+  const nextStep = Math.max(-4, Math.min(6, descriptionSizeStep + delta));
+  if (nextStep === descriptionSizeStep) {
+    return;
+  }
+
+  descriptionSizeStep = nextStep;
+  applyDescriptionTextSize();
 }
 
 function clearAllThumbSelections() {
@@ -198,7 +189,7 @@ function showBackgroundImage(src) {
 }
 
 function selectBg(src, thumbEl) {
-  imageDiv.style.background = '';
+  bgLayer.style.background = '';
   showBackgroundImage(src);
   clearAllThumbSelections();
   if (thumbEl) thumbEl.classList.add('selected');
@@ -206,15 +197,14 @@ function selectBg(src, thumbEl) {
 
 function selectColor(color, thumbEl) {
   hideBackgroundImage();
-  imageDiv.style.background = color;
+  bgLayer.style.background = color;
   clearAllThumbSelections();
   if (thumbEl) thumbEl.classList.add('selected');
 }
 
 function makeImageFileName() {
-  const title = (inpTitle.value.trim() || 'Blank').replace(/[<>:"/\\|?*]+/g, ' ').trim() || 'Blank';
-  const date = (inpDate.value.trim() || 'Blank').replace(/[<>:"/\\|?*]+/g, ' ').trim() || 'Blank';
-  return title + ' - ' + date + '.jpg';
+  const title = (inpProgrammeTitle.value.trim() || 'Course Programme').replace(/[<>:"/\\|?*]+/g, ' ').trim() || 'Course Programme';
+  return title + '.jpg';
 }
 
 function isSafariBrowser() {
@@ -244,9 +234,7 @@ function readFileAsDataUrl(file) {
 }
 
 async function downloadFlyerImage() {
-  const flyer = document.getElementById('flyer');
-
-  if (!flyer || !window.htmlToImage) {
+  if (!flyerEl || !window.htmlToImage) {
     return;
   }
 
@@ -257,7 +245,7 @@ async function downloadFlyerImage() {
       await document.fonts.ready;
     }
 
-    const images = Array.from(flyer.querySelectorAll('img'));
+    const images = Array.from(flyerEl.querySelectorAll('img'));
     await Promise.all(images.map(function(img) {
       if (img.complete) return Promise.resolve();
       return new Promise(function(resolve) {
@@ -266,12 +254,13 @@ async function downloadFlyerImage() {
       });
     }));
 
-    const pixelRatio = Math.max(window.devicePixelRatio || 1, 3);
-    const canvas = await window.htmlToImage.toCanvas(flyer, {
+    // Don't pass canvasWidth/canvasHeight: html-to-image already multiplies
+    // them by pixelRatio internally, so supplying pre-multiplied values
+    // squares the ratio (a "3x" export was really 9x, ~864dpi and tens of MB).
+    const pixelRatio = Math.max(window.devicePixelRatio || 1, 2);
+    const canvas = await window.htmlToImage.toCanvas(flyerEl, {
       backgroundColor: '#ffffff',
       pixelRatio: pixelRatio,
-      canvasWidth: flyer.offsetWidth * pixelRatio,
-      canvasHeight: flyer.offsetHeight * pixelRatio,
       imagePlaceholder: transparentPixel,
       style: {
         margin: '0',
@@ -280,8 +269,8 @@ async function downloadFlyerImage() {
     });
 
     // JPEG instead of PNG: the flyer is always fully opaque (backgroundColor
-    // above fills it in), and PNG's lossless compression makes the full-bleed
-    // photo background balloon to tens of MB — far too big to email. JPEG at
+    // above fills it in), and PNG's lossless compression makes a full-bleed
+    // background balloon to tens of MB — far too big to email. JPEG at
     // high quality keeps it visually indistinguishable at a fraction of the size.
     const imageBlob = await new Promise(function(resolve) {
       canvas.toBlob(resolve, 'image/jpeg', 0.92);
@@ -299,32 +288,40 @@ async function downloadFlyerImage() {
     downloadLink.click();
     downloadLink.remove();
     URL.revokeObjectURL(imageUrl);
+  } catch (error) {
+    // Without this the button silently re-enables and nothing downloads —
+    // the usual cause is opening index.html straight off disk, where the
+    // browser blocks reading the images back out for the export.
+    window.alert('Could not generate the flyer image.\n\n' + error.message
+      + '\n\nIf you opened this file directly, try serving the folder over http instead.');
   } finally {
     downloadImageBtn.disabled = false;
   }
 }
 
 function resetForm() {
-  inpTitle.value = '';
-  inpSubtitle.value = '';
-  inpDate.value = '';
-  inpLocation.value = '';
-  inpUrl.value = '';
-  quill.setContents([]);
+  inpProgrammeTitle.value = '';
+
+  COURSE_NUMBERS.forEach(function(n) {
+    COURSE_FIELDS.forEach(function(field) {
+      document.getElementById('inp-c' + n + '-' + field).value = '';
+      updateCourseField(n, field);
+    });
+    document.getElementById('inp-c' + n + '-url').value = '';
+    updateQrForCourse(n);
+  });
 
   hideBackgroundImage();
-  imageDiv.style.background = '';
+  bgLayer.style.background = '';
   inpBg.value = '';
   const customThumb = bgGrid.querySelector('.bg-thumb-custom');
   if (customThumb) customThumb.parentNode.removeChild(customThumb);
   clearAllThumbSelections();
 
-  updateTitle();
-  updateSubtitle();
-  updateDate();
-  updateLocation();
-  updateQr();
-  updateDescription();
+  descriptionSizeStep = 0;
+  applyDescriptionTextSize();
+
+  updateProgrammeTitle();
 }
 
 colorGrid.querySelectorAll('.color-swatch[data-color]').forEach(function(btn) {
@@ -354,14 +351,17 @@ inpBg.addEventListener('change', async function() {
   selectBg(dataUrl, existing);
 });
 
-inpTitle.addEventListener('input', updateTitle);
-inpSubtitle.addEventListener('input', updateSubtitle);
-inpDate.addEventListener('input', updateDate);
-inpLocation.addEventListener('input', updateLocation);
-quill.on('text-change', updateDescription);
+inpProgrammeTitle.addEventListener('input', updateProgrammeTitle);
 
-document.addEventListener('focusin', function(e) {
-  if (e.target !== inpUrl) updateQr();
+COURSE_NUMBERS.forEach(function(n) {
+  COURSE_FIELDS.forEach(function(field) {
+    document.getElementById('inp-c' + n + '-' + field).addEventListener('input', function() {
+      updateCourseField(n, field);
+    });
+  });
+  document.getElementById('inp-c' + n + '-url').addEventListener('input', function() {
+    updateQrForCourse(n);
+  });
 });
 
 downloadImageBtn.addEventListener('click', downloadFlyerImage);
@@ -373,10 +373,16 @@ descSizeIncreaseBtn.addEventListener('click', function() {
   changeDescriptionTextSize(1);
 });
 
+window.addEventListener('resize', fitFlyerToPreview);
+
 warnSafariUsers();
 applyDescriptionTextSize();
-updateTitle();
-updateSubtitle();
-updateQr();
-updateDescription();
+fitFlyerToPreview();
+updateProgrammeTitle();
+COURSE_NUMBERS.forEach(function(n) {
+  COURSE_FIELDS.forEach(function(field) {
+    updateCourseField(n, field);
+  });
+  updateQrForCourse(n);
+});
 hideBackgroundImage();
