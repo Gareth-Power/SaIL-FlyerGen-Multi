@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="Thumb.png" alt="FlyerGen thumbnail" width="240">
+	<img src="Thumb.png?v=2" alt="FlyerGen Multi thumbnail" width="240">
 </p>
 
 # FlyerGen Multi
