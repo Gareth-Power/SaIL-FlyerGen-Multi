@@ -75,9 +75,33 @@ function updateCourseField(courseNum, field) {
   } else if (field === 'desc') {
     out.textContent = val;
     out.classList.toggle('is-empty', !val);
+    applyDescriptionClamp(courseNum);
   } else {
     out.textContent = val;
+    // A title that wraps to a second line leaves the description one line less.
+    applyDescriptionClamp(courseNum);
   }
+}
+
+// The description stretches to fill whatever is left between the title and the
+// meta row, so how many lines that is depends on the text size and on how many
+// lines the title took. Clamping to the measured count cuts it at a line
+// boundary with an ellipsis instead of slicing a line in half.
+function applyDescriptionClamp(courseNum) {
+  const out = document.querySelector('[data-out="c' + courseNum + '-desc"]');
+
+  if (out.classList.contains('is-empty')) {
+    return;
+  }
+
+  const lineHeight = parseFloat(window.getComputedStyle(out).lineHeight);
+
+  if (!lineHeight) {
+    return;
+  }
+
+  const lines = Math.max(1, Math.floor(out.clientHeight / lineHeight));
+  out.style.webkitLineClamp = String(lines);
 }
 
 function updateQrForCourse(courseNum) {
@@ -121,6 +145,7 @@ function applyDescriptionTextSize() {
   flyerEl.style.setProperty('--course-desc-size', size + 'px');
   descSizeDecreaseBtn.disabled = descriptionSizeStep <= -4;
   descSizeIncreaseBtn.disabled = descriptionSizeStep >= 6;
+  COURSE_NUMBERS.forEach(applyDescriptionClamp);
 }
 
 function changeDescriptionTextSize(delta) {
