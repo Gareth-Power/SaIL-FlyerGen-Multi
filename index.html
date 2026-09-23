@@ -6,10 +6,28 @@
 <title>SaIL FlyerGen Multi — Course Programme</title>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-svg@1.1.0/lib/qrcode.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
 <style>
+  /* Fonts are served from this folder rather than Google Fonts on purpose:
+     html-to-image can only inline @font-face rules it can read, and a
+     cross-origin stylesheet gives it nothing. Without them the exported image
+     silently fell back to Georgia/Arial while keeping the widths measured from
+     the real fonts, which truncated the date and location. */
+  @font-face {
+    font-family: 'Manrope';
+    src: url('fonts/manrope-variable-latin.woff2') format('woff2');
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Instrument Serif';
+    src: url('fonts/instrument-serif-italic-latin.woff2') format('woff2');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+  }
+
   /* ── Reset ── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
