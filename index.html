@@ -502,25 +502,34 @@
        grow into the gap. */
     margin-top: auto;
     padding-top: 2.6mm;
+    /* Date above location rather than side by side: at this text size a
+       long date and a long venue don't both fit across one card. */
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.2mm;
     flex-shrink: 0;
   }
 
   .card-meta-item {
     display: flex;
     align-items: center;
-    gap: 1.3mm;
+    gap: 1.8mm;
     min-width: 0;
   }
 
-  .card-meta-item svg { flex-shrink: 0; }
+  .card-meta-item svg { flex-shrink: 0; width: 16px; height: 16px; }
 
   .card-meta-item span {
-    font-family: 'Instrument Serif', Georgia, serif;
+    /* Manrope has no italic cut, so this is the browser's slanted version
+       of the upright face. */
+    font-family: 'Manrope', sans-serif;
     font-style: italic;
-    font-size: 13px;
+    font-weight: 500;
+    font-size: 16px;
+    /* The slant pushes the top of the last letter past the box, where
+       overflow:hidden clipped it ("Virtual" read as "Virtuai"). */
+    padding-right: 0.25em;
     color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
