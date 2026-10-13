@@ -1,5 +1,22 @@
 const COURSE_NUMBERS = [1, 2, 3, 4, 5, 6];
 const COURSE_FIELDS = ['title', 'desc', 'date', 'location'];
+const TITLE_MAX_LINES = 4;
+const MIN_COURSES = 2;
+const DEFAULT_COURSES = 2;
+const MM = 96 / 25.4;
+const CARD_GAP = 6.5 * MM;
+// Cards per row for each course count. Rows are centred, so five courses sit
+// as three over two. Three and four can't scale up (the area runs out of
+// height first), so instead their cards change shape at the same text size:
+// `tall` makes a card that share of the area's height, `wide` stretches the
+// cards to fill the row.
+const CARD_LAYOUTS = {
+  2: { rows: [2] },
+  3: { rows: [3], tall: 0.8 },
+  4: { rows: [2, 2], wide: true },
+  5: { rows: [3, 2] },
+  6: { rows: [3, 3] }
+};
 
 const inpProgrammeTitle = document.getElementById('inp-programme-title');
 const outProgrammeTitle = document.getElementById('out-programme-title');
@@ -14,12 +31,74 @@ const bgGrid = document.getElementById('bg-grid');
 const colorGrid = document.getElementById('color-grid');
 const bgImage = document.querySelector('#bg-img');
 const bgLayer = document.querySelector('#bg-layer');
+const logoImage = document.querySelector('.logo-wrap img');
 const flyerEl = document.getElementById('flyer');
 const flyerScaleWrap = document.querySelector('.flyer-scale-wrap');
 const previewArea = document.querySelector('.preview-area');
 const transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
 let backgroundLoadToken = 0;
 let descriptionSizeStep = 0;
+let courseCount = DEFAULT_COURSES;
+
+const courseGrid = document.getElementById('course-grid');
+const courseCountLabel = document.getElementById('course-count-label');
+const courseCountDecreaseBtn = document.getElementById('course-count-decrease-btn');
+const courseCountIncreaseBtn = document.getElementById('course-count-increase-btn');
+
+// Every card starts from the size it has in the six-card layout (reshaped for
+// the counts in CARD_LAYOUTS that ask for it), so its text never changes
+// size. With fewer courses the whole block is scaled up as one, gaps
+// included, as far as the grid area allows, and centred in it.
+function layoutCards() {
+  const areaWidth = courseGrid.clientWidth;
+  const areaHeight = courseGrid.clientHeight;
+  const layout = CARD_LAYOUTS[courseCount];
+  const rows = layout.rows;
+  const maxCols = Math.max.apply(null, rows);
+  let cardWidth = (areaWidth - 2 * CARD_GAP) / 3;
+  let cardHeight = (areaHeight - CARD_GAP) / 2;
+  if (layout.wide) {
+    cardWidth = (areaWidth - (maxCols - 1) * CARD_GAP) / maxCols;
+  }
+  if (layout.tall) {
+    cardHeight = areaHeight * layout.tall;
+  }
+  const blockWidth = maxCols * cardWidth + (maxCols - 1) * CARD_GAP;
+  const blockHeight = rows.length * cardHeight + (rows.length - 1) * CARD_GAP;
+  const scale = Math.min(areaWidth / blockWidth, areaHeight / blockHeight);
+  const top = (areaHeight - blockHeight * scale) / 2;
+
+  let courseNum = 1;
+  rows.forEach(function(cols, rowIndex) {
+    const rowWidth = (cols * cardWidth + (cols - 1) * CARD_GAP) * scale;
+    const left = (areaWidth - rowWidth) / 2;
+    for (let col = 0; col < cols; col++) {
+      const card = courseGrid.querySelector('.course-card[data-course="' + courseNum + '"]');
+      const x = left + col * (cardWidth + CARD_GAP) * scale;
+      const y = top + rowIndex * (cardHeight + CARD_GAP) * scale;
+      card.style.width = cardWidth + 'px';
+      card.style.height = cardHeight + 'px';
+      card.style.transform = 'translate(' + x + 'px, ' + y + 'px) scale(' + scale + ')';
+      courseNum += 1;
+    }
+  });
+}
+
+function setCourseCount(count) {
+  courseCount = Math.max(MIN_COURSES, Math.min(COURSE_NUMBERS.length, count));
+  COURSE_NUMBERS.forEach(function(n) {
+    const hidden = n > courseCount;
+    courseGrid.querySelector('.course-card[data-course="' + n + '"]').hidden = hidden;
+    document.querySelector('.course-group[data-course="' + n + '"]').hidden = hidden;
+  });
+  courseCountLabel.textContent = String(courseCount);
+  courseCountDecreaseBtn.disabled = courseCount <= MIN_COURSES;
+  courseCountIncreaseBtn.disabled = courseCount >= COURSE_NUMBERS.length;
+  layoutCards();
+  // A hidden card measures zero height, so a description typed (or restored)
+  // while it was hidden needs its clamp worked out again once it shows.
+  COURSE_NUMBERS.forEach(applyDescriptionClamp);
+}
 
 // The flyer is a fixed 297x210mm block, so it has to be scaled down to fit the
 // preview pane. A CSS transform shrinks only the paint, not the layout box the
@@ -54,14 +133,30 @@ function updateProgrammeTitle() {
   outProgrammeTitle.textContent = val;
 
   outProgrammeTitle.style.fontSize = '42px';
+  outProgrammeTitle.style.overflowWrap = 'normal';
   let size = 42;
   const maxHeight = programmeTitleWrap.clientHeight;
   const maxWidth = programmeTitleWrap.clientWidth;
+  const lineHeight = parseFloat(window.getComputedStyle(outProgrammeTitle).lineHeight) / 42;
   // Width matters as much as height: a long unbreakable word keeps the heading
-  // one line tall while pushing it out of the band and over the logo.
-  while (size > 16 && (outProgrammeTitle.scrollHeight > maxHeight || outProgrammeTitle.offsetWidth > maxWidth)) {
+  // one line tall while pushing it out of the band and over the logo, and the
+  // h1's own box stays at the wrap width, so only scrollWidth sees it.
+  // Capping the line count keeps long titles a tidy block rather than a tall
+  // stack of big text.
+  function overflows() {
+    const lines = Math.round(outProgrammeTitle.scrollHeight / (size * lineHeight));
+    return lines > TITLE_MAX_LINES
+      || outProgrammeTitle.scrollHeight > maxHeight
+      || outProgrammeTitle.scrollWidth > maxWidth;
+  }
+  while (size > 18 && overflows()) {
     size -= 1;
     outProgrammeTitle.style.fontSize = size + 'px';
+  }
+  // Last resort at the size floor: break a huge word rather than let the
+  // wrap clip it. Only now, so a long word shrinks before it splits.
+  if (overflows()) {
+    outProgrammeTitle.style.overflowWrap = 'anywhere';
   }
 }
 
@@ -70,7 +165,10 @@ function updateCourseField(courseNum, field) {
   const out = document.querySelector('[data-out="c' + courseNum + '-' + field + '"]');
   const val = input.value.trim();
 
-  if (field === 'date' || field === 'location') {
+  if (field === 'date') {
+    out.textContent = val || 'TBC';
+    updateDateTile(courseNum, val);
+  } else if (field === 'location') {
     out.textContent = val || 'TBC';
   } else if (field === 'desc') {
     out.textContent = val;
@@ -81,6 +179,29 @@ function updateCourseField(courseNum, field) {
     // A title that wraps to a second line leaves the description one line less.
     applyDescriptionClamp(courseNum);
   }
+}
+
+// The date field is free text. "21 Oct", "Tue 21 October" or "3rd Dec 2026"
+// becomes the big day/month tile; anything else ("Every Tuesday", "Spring
+// term") stays as text in the meta row rather than being mangled into a tile.
+// Month and weekday are real names, so "2 days" or "Until 3 Dec" don't turn
+// into a misleading tile.
+const DATE_TILE_PATTERN = new RegExp(
+  '^(?:(?:mon|tue|tues|wed|thu|thur|thurs|fri|sat|sun)(?:day|sday|nesday|rsday|urday)?\\.?,?\\s+)?'
+  + '(\\d{1,2})(?:st|nd|rd|th)?\\s+'
+  + '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)'
+  + '\\.?(?:\\s+\\d{4})?$',
+  'i'
+);
+
+function updateDateTile(courseNum, val) {
+  const card = document.querySelector('.course-card[data-course="' + courseNum + '"]');
+  const tile = card.querySelector('.date-tile');
+  const match = val.match(DATE_TILE_PATTERN);
+  card.classList.toggle('has-date-tile', !!match);
+  tile.querySelector('.date-tile-day').textContent = match ? match[1] : '';
+  tile.querySelector('.date-tile-month').textContent = match ? match[2].slice(0, 3) : '';
+  applyDescriptionClamp(courseNum);
 }
 
 // The description stretches to fill whatever is left between the title and the
@@ -104,30 +225,47 @@ function applyDescriptionClamp(courseNum) {
   out.style.webkitLineClamp = String(lines);
 }
 
-function updateQrForCourse(courseNum) {
-  const urlInput = document.getElementById('inp-c' + courseNum + '-url');
-  const url = urlInput.value.trim();
-  const qrWrap = document.querySelector('.qr-mini[data-qr="' + courseNum + '"]');
-  const qrBox = qrWrap.querySelector('.qr-mini-box');
-  qrBox.innerHTML = '';
+const QR_HINT = 'Generates one QR code, shown to the left of the title.';
 
-  if (!url) {
+function updateQr() {
+  const url = document.getElementById('inp-programme-url').value.trim();
+  const qrWrap = document.getElementById('programme-qr');
+  const qrBox = qrWrap.querySelector('.qr-mini-box');
+  const hint = document.getElementById('programme-url-hint');
+  qrBox.innerHTML = '';
+  hint.textContent = QR_HINT;
+  hint.classList.remove('is-error');
+
+  // A QR code holds only so much: past roughly 2,300 characters the library
+  // throws, so treat that like no link and say why rather than leave a stale code.
+  let svg = '';
+  if (url) {
+    try {
+      svg = new QRCode({
+        content: url,
+        width: 256,
+        height: 256,
+        color: '#1a0f1f',
+        background: '#ffffff',
+        ecl: 'M',
+        join: true,
+        padding: 0
+      }).svg();
+    } catch (error) {
+      hint.textContent = 'This link is too long for a QR code. Try a shorter link.';
+      hint.classList.add('is-error');
+    }
+  }
+
+  if (!svg) {
     qrWrap.classList.add('is-empty');
+    flyerEl.classList.remove('has-qr');
+    updateProgrammeTitle();
     return;
   }
 
   qrWrap.classList.remove('is-empty');
-
-  const svg = new QRCode({
-    content: url,
-    width: 256,
-    height: 256,
-    color: '#1a0f1f',
-    background: '#ffffff',
-    ecl: 'M',
-    join: true,
-    padding: 0
-  }).svg();
+  flyerEl.classList.add('has-qr');
   qrBox.innerHTML = svg;
   const svgEl = qrBox.querySelector('svg');
   if (svgEl) {
@@ -138,10 +276,11 @@ function updateQrForCourse(courseNum) {
     svgEl.removeAttribute('height');
     svgEl.style.display = 'block';
   }
+  updateProgrammeTitle();
 }
 
 function applyDescriptionTextSize() {
-  const size = 12 + descriptionSizeStep;
+  const size = 14 + descriptionSizeStep;
   flyerEl.style.setProperty('--course-desc-size', size + 'px');
   descSizeDecreaseBtn.disabled = descriptionSizeStep <= -4;
   descSizeIncreaseBtn.disabled = descriptionSizeStep >= 6;
@@ -170,6 +309,13 @@ function hideBackgroundImage() {
   bgImage.onerror = null;
   bgImage.src = transparentPixel;
   bgImage.style.display = 'none';
+  setLogoForBackground(false);
+}
+
+// The white logo only reads over a blurred photo; on the pale solid colours it
+// all but disappears, so those get the colour logo instead.
+function setLogoForBackground(hasPhoto) {
+  logoImage.src = hasPhoto ? 'Sail_NEW3.png' : 'SaIL-logo-colour.png';
 }
 
 function inlineBackgroundImage(imgEl, loadToken) {
@@ -202,6 +348,7 @@ function showBackgroundImage(src) {
   backgroundLoadToken += 1;
   const loadToken = backgroundLoadToken;
   bgImage.style.display = 'block';
+  setLogoForBackground(true);
   bgImage.onload = function() {
     inlineBackgroundImage(bgImage, loadToken);
   };
@@ -332,9 +479,9 @@ function resetForm() {
       document.getElementById('inp-c' + n + '-' + field).value = '';
       updateCourseField(n, field);
     });
-    document.getElementById('inp-c' + n + '-url').value = '';
-    updateQrForCourse(n);
   });
+  document.getElementById('inp-programme-url').value = '';
+  updateQr();
 
   hideBackgroundImage();
   bgLayer.style.background = '';
@@ -344,6 +491,7 @@ function resetForm() {
   clearAllThumbSelections();
 
   descriptionSizeStep = 0;
+  setCourseCount(DEFAULT_COURSES);
   applyDescriptionTextSize();
 
   updateProgrammeTitle();
@@ -384,10 +532,9 @@ COURSE_NUMBERS.forEach(function(n) {
       updateCourseField(n, field);
     });
   });
-  document.getElementById('inp-c' + n + '-url').addEventListener('input', function() {
-    updateQrForCourse(n);
-  });
 });
+
+document.getElementById('inp-programme-url').addEventListener('input', updateQr);
 
 downloadImageBtn.addEventListener('click', downloadFlyerImage);
 resetFormBtn.addEventListener('click', resetForm);
@@ -397,10 +544,17 @@ descSizeDecreaseBtn.addEventListener('click', function() {
 descSizeIncreaseBtn.addEventListener('click', function() {
   changeDescriptionTextSize(1);
 });
+courseCountDecreaseBtn.addEventListener('click', function() {
+  setCourseCount(courseCount - 1);
+});
+courseCountIncreaseBtn.addEventListener('click', function() {
+  setCourseCount(courseCount + 1);
+});
 
 window.addEventListener('resize', fitFlyerToPreview);
 
 warnSafariUsers();
+setCourseCount(DEFAULT_COURSES);
 applyDescriptionTextSize();
 fitFlyerToPreview();
 updateProgrammeTitle();
@@ -408,6 +562,6 @@ COURSE_NUMBERS.forEach(function(n) {
   COURSE_FIELDS.forEach(function(field) {
     updateCourseField(n, field);
   });
-  updateQrForCourse(n);
 });
+updateQr();
 hideBackgroundImage();

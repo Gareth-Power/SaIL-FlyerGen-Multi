@@ -4,12 +4,13 @@
 
 # FlyerGen Multi
 
-FlyerGen Multi is a small browser-based tool for building a single flyer that advertises six courses at once.
+FlyerGen Multi is a small browser-based tool for building a single flyer that advertises two to six courses at once.
 
 It lets you:
 - set a programme title, shown in the large diamond device
-- enter a title, short description, date, location, and booking link for each of six courses
-- generate an individual QR code per course from its booking link
+- enter one booking link, shown as a QR code beside the title
+- choose how many courses to show (2 to 6); the cards resize to fill the flyer
+- enter a title, short description, date and location for each course
 - choose a background image or color behind the diamond and course cards
 - preview the finished flyer live
 - export the flyer as a JPEG image

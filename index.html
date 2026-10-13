@@ -98,6 +98,8 @@
     padding-bottom: 8px;
   }
 
+  .course-group[hidden] { display: none; }
+
   .course-group {
     display: flex;
     flex-direction: column;
@@ -255,6 +257,11 @@
     line-height: 1.4;
   }
 
+  .field .hint.is-error {
+    color: #A81765;
+    font-weight: 700;
+  }
+
   .btn-row {
     margin-top: auto;
     padding-top: 20px;
@@ -354,8 +361,9 @@
   .programme-title-wrap {
     position: absolute;
     left: 10.5mm;
-    top: 0;
-    height: 56mm;
+    /* 7mm clear above and below, still centred on the 56mm header band. */
+    top: 7mm;
+    height: 42mm;
     width: 114mm;
     z-index: 2;
     display: flex;
@@ -392,6 +400,9 @@
   }
 
   /* ── Course grid ── */
+  /* layoutCards() in app.js places the cards. Their text is always at its
+     six-card size; fewer cards are scaled up as a whole, like a photo, or
+     reshaped where there's no room to scale. */
   .course-grid {
     position: absolute;
     left: 10.5mm;
@@ -399,14 +410,16 @@
     top: 56mm;
     bottom: 10.5mm;
     z-index: 4;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-    gap: 6.5mm;
   }
 
+  .course-card[hidden] { display: none; }
+
   .course-card {
-    position: relative;
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: top left;
+    box-sizing: border-box;
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 0 0 1px #D8DDE0, 0 2px 4px rgba(33,43,50,.04), 0 12px 28px rgba(33,43,50,.05);
@@ -416,63 +429,122 @@
     overflow: hidden;
   }
 
-  /* Width is pinned to the code itself so the caption can't widen the column
-     and run under the course title. */
+  /* Booking QR: a white ticket left of the title, centred in the 56mm header
+     band so it shares the title's vertical centre. */
   .qr-mini {
     position: absolute;
-    top: 4mm;
-    right: 4mm;
-    width: 13mm;
+    left: 10.5mm;
+    top: 0;
+    height: 56mm;
+    z-index: 3;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.8mm;
   }
 
   .qr-mini.is-empty { visibility: hidden; }
 
-  /* The 1mm inset is the quiet zone: scanners need ~4 clear modules around
-     the symbol, and nothing may clip the three corner finder patterns. */
-  .qr-mini-box {
-    width: 13mm;
-    height: 13mm;
+  .qr-card {
     background: #fff;
-    padding: 1mm;
-    box-shadow: 0 0 0 1px #D8DDE0;
+    border-radius: 12px;
+    padding: 2.8mm 2.8mm 2.2mm;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 1.6mm;
+    box-shadow: 0 2px 4px rgba(90, 10, 55, .12), 0 10px 24px rgba(90, 10, 55, .22);
+  }
+
+  /* The card's 2.8mm padding is the quiet zone: scanners need ~4 clear
+     modules around the symbol, and nothing may clip the finder patterns. */
+  .qr-mini-box {
+    width: 22mm;
+    height: 22mm;
   }
 
   .qr-mini-box svg { width: 100% !important; height: 100% !important; display: block; }
 
-  .qr-mini-label {
-    font-size: 5.5px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    line-height: 1.15;
-    text-align: center;
-    text-transform: uppercase;
-    color: #8d6c7f;
+  /* QR card (27.6mm) plus a 6mm gap before the title. */
+  .flyer.has-qr .programme-title-wrap {
+    left: 44mm;
+    width: 82mm;
   }
 
-  .accent-rule {
-    width: 11.5mm;
-    height: 1.3mm;
-    border-radius: 0.8mm;
-    background: var(--magenta);
-    margin-bottom: 3mm;
+  .qr-mini-label {
+    font-size: 8.5px;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--magenta);
+  }
+
+  /* Faint SaIL diamond tucked into the bottom-right corner, behind the text. */
+  .card-diamond {
+    position: absolute;
+    right: -46px;
+    bottom: -46px;
+    width: 140px;
+    height: 140px;
+    border-radius: 22px;
+    background: #FDEEF5;
+    transform: rotate(45deg);
+    pointer-events: none;
+  }
+
+  .card-head,
+  .course-desc,
+  .card-meta { position: relative; }
+
+  .card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
     flex-shrink: 0;
+  }
+
+  /* The date as a solid block beside the title, when app.js can read a day
+     and month out of the date field; otherwise it stays in the meta row. */
+  .date-tile {
+    flex-shrink: 0;
+    width: 58px;
+    height: 64px;
+    border-radius: 12px;
+    background: var(--magenta);
+    color: #fff;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .course-card.has-date-tile .date-tile { display: flex; }
+  .course-card.has-date-tile .card-meta-date { display: none; }
+
+  .date-tile-day {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .date-tile-month {
+    margin-top: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
   }
 
   .course-title {
     font-weight: 800;
-    font-size: 17px;
+    font-size: 19px;
     line-height: 1.2;
     color: var(--ink);
-    padding-right: 16mm;
+    margin-top: 2px;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -481,10 +553,10 @@
      clamp is set from that measured height in app.js so the text is cut at a
      line boundary rather than sliced through the middle of one. */
   .course-desc {
-    font-size: var(--course-desc-size, 12px);
+    font-size: var(--course-desc-size, 14px);
     line-height: 1.4;
     color: #4C6272;
-    margin-top: 1.6mm;
+    margin-top: 3.5mm;
     margin-bottom: 2.6mm;
     flex: 1 1 auto;
     min-height: 0;
@@ -566,6 +638,12 @@
     </div>
 
     <div class="field">
+      <label for="inp-programme-url">Booking URL</label>
+      <input type="text" id="inp-programme-url" placeholder="https://…" autocomplete="off">
+      <span class="hint" id="programme-url-hint" aria-live="polite">Generates one QR code, shown to the left of the title.</span>
+    </div>
+
+    <div class="field">
       <div class="field-label-row">
         <label>Course Description Text Size</label>
         <div class="text-size-controls" aria-label="Course description text size controls">
@@ -573,10 +651,22 @@
           <button class="text-size-btn" id="desc-size-increase-btn" type="button" aria-label="Increase description text size">+</button>
         </div>
       </div>
-      <span class="hint">Applies to all six course descriptions at once.</span>
+      <span class="hint">Applies to all course descriptions at once.</span>
     </div>
 
     <h2 style="margin-top:4px">Courses</h2>
+
+    <div class="field">
+      <div class="field-label-row">
+        <label>Number of Courses</label>
+        <div class="text-size-controls" aria-label="Number of courses">
+          <button class="text-size-btn" id="course-count-decrease-btn" type="button" aria-label="Remove a course">-</button>
+          <span class="text-size-label" id="course-count-label" aria-live="polite">2</span>
+          <button class="text-size-btn" id="course-count-increase-btn" type="button" aria-label="Add a course">+</button>
+        </div>
+      </div>
+      <span class="hint">From 2 to 6. Fewer courses means bigger cards.</span>
+    </div>
 
     <div class="course-group" data-course="1">
       <h3>Course 1</h3>
@@ -595,11 +685,6 @@
       <div class="field">
         <label for="inp-c1-location">Location</label>
         <input type="text" id="inp-c1-location" placeholder="e.g. SaIL Centre" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="inp-c1-url">Booking URL</label>
-        <input type="text" id="inp-c1-url" placeholder="https://…" autocomplete="off">
-        <span class="hint">Generates this course's own QR code.</span>
       </div>
     </div>
 
@@ -621,11 +706,6 @@
         <label for="inp-c2-location">Location</label>
         <input type="text" id="inp-c2-location" placeholder="e.g. SaIL Centre" autocomplete="off">
       </div>
-      <div class="field">
-        <label for="inp-c2-url">Booking URL</label>
-        <input type="text" id="inp-c2-url" placeholder="https://…" autocomplete="off">
-        <span class="hint">Generates this course's own QR code.</span>
-      </div>
     </div>
 
     <div class="course-group" data-course="3">
@@ -645,11 +725,6 @@
       <div class="field">
         <label for="inp-c3-location">Location</label>
         <input type="text" id="inp-c3-location" placeholder="e.g. Via Teams" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="inp-c3-url">Booking URL</label>
-        <input type="text" id="inp-c3-url" placeholder="https://…" autocomplete="off">
-        <span class="hint">Generates this course's own QR code.</span>
       </div>
     </div>
 
@@ -671,11 +746,6 @@
         <label for="inp-c4-location">Location</label>
         <input type="text" id="inp-c4-location" placeholder="e.g. SaIL Centre" autocomplete="off">
       </div>
-      <div class="field">
-        <label for="inp-c4-url">Booking URL</label>
-        <input type="text" id="inp-c4-url" placeholder="https://…" autocomplete="off">
-        <span class="hint">Generates this course's own QR code.</span>
-      </div>
     </div>
 
     <div class="course-group" data-course="5">
@@ -696,11 +766,6 @@
         <label for="inp-c5-location">Location</label>
         <input type="text" id="inp-c5-location" placeholder="e.g. SaIL Centre" autocomplete="off">
       </div>
-      <div class="field">
-        <label for="inp-c5-url">Booking URL</label>
-        <input type="text" id="inp-c5-url" placeholder="https://…" autocomplete="off">
-        <span class="hint">Generates this course's own QR code.</span>
-      </div>
     </div>
 
     <div class="course-group" data-course="6">
@@ -720,11 +785,6 @@
       <div class="field">
         <label for="inp-c6-location">Location</label>
         <input type="text" id="inp-c6-location" placeholder="e.g. SaIL Centre" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="inp-c6-url">Booking URL</label>
-        <input type="text" id="inp-c6-url" placeholder="https://…" autocomplete="off">
-        <span class="hint">Generates this course's own QR code.</span>
       </div>
     </div>
 
@@ -783,26 +843,35 @@
 
       <div class="diamond-mega"></div>
 
+      <div class="qr-mini is-empty" id="programme-qr">
+        <div class="qr-card">
+          <div class="qr-mini-box"></div>
+          <div class="qr-mini-label">Scan to book</div>
+        </div>
+      </div>
+
       <div class="programme-title-wrap">
         <h1 id="out-programme-title"></h1>
       </div>
 
       <div class="logo-wrap">
-        <img src="SaIL-logo-colour.png" alt="Simulation &amp; Interactive Learning — Guy's &amp; St Thomas', London">
+        <img src="Sail_NEW3.png" alt="Simulation &amp; Interactive Learning — Guy's &amp; St Thomas', London">
       </div>
 
       <div class="course-grid" id="course-grid">
 
         <div class="course-card" data-course="1">
-          <div class="qr-mini is-empty" data-qr="1">
-            <div class="qr-mini-box"></div>
-            <div class="qr-mini-label">Scan to book</div>
+          <div class="card-diamond"></div>
+          <div class="card-head">
+            <div class="date-tile" data-tile="1">
+              <span class="date-tile-day"></span>
+              <span class="date-tile-month"></span>
+            </div>
+            <h3 class="course-title" data-out="c1-title"></h3>
           </div>
-          <div class="accent-rule"></div>
-          <h3 class="course-title" data-out="c1-title"></h3>
           <p class="course-desc is-empty" data-out="c1-desc"></p>
           <div class="card-meta">
-            <div class="card-meta-item">
+            <div class="card-meta-item card-meta-date">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
               <span data-out="c1-date">TBC</span>
             </div>
@@ -814,15 +883,17 @@
         </div>
 
         <div class="course-card" data-course="2">
-          <div class="qr-mini is-empty" data-qr="2">
-            <div class="qr-mini-box"></div>
-            <div class="qr-mini-label">Scan to book</div>
+          <div class="card-diamond"></div>
+          <div class="card-head">
+            <div class="date-tile" data-tile="2">
+              <span class="date-tile-day"></span>
+              <span class="date-tile-month"></span>
+            </div>
+            <h3 class="course-title" data-out="c2-title"></h3>
           </div>
-          <div class="accent-rule"></div>
-          <h3 class="course-title" data-out="c2-title"></h3>
           <p class="course-desc is-empty" data-out="c2-desc"></p>
           <div class="card-meta">
-            <div class="card-meta-item">
+            <div class="card-meta-item card-meta-date">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
               <span data-out="c2-date">TBC</span>
             </div>
@@ -834,15 +905,17 @@
         </div>
 
         <div class="course-card" data-course="3">
-          <div class="qr-mini is-empty" data-qr="3">
-            <div class="qr-mini-box"></div>
-            <div class="qr-mini-label">Scan to book</div>
+          <div class="card-diamond"></div>
+          <div class="card-head">
+            <div class="date-tile" data-tile="3">
+              <span class="date-tile-day"></span>
+              <span class="date-tile-month"></span>
+            </div>
+            <h3 class="course-title" data-out="c3-title"></h3>
           </div>
-          <div class="accent-rule"></div>
-          <h3 class="course-title" data-out="c3-title"></h3>
           <p class="course-desc is-empty" data-out="c3-desc"></p>
           <div class="card-meta">
-            <div class="card-meta-item">
+            <div class="card-meta-item card-meta-date">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
               <span data-out="c3-date">TBC</span>
             </div>
@@ -854,15 +927,17 @@
         </div>
 
         <div class="course-card" data-course="4">
-          <div class="qr-mini is-empty" data-qr="4">
-            <div class="qr-mini-box"></div>
-            <div class="qr-mini-label">Scan to book</div>
+          <div class="card-diamond"></div>
+          <div class="card-head">
+            <div class="date-tile" data-tile="4">
+              <span class="date-tile-day"></span>
+              <span class="date-tile-month"></span>
+            </div>
+            <h3 class="course-title" data-out="c4-title"></h3>
           </div>
-          <div class="accent-rule"></div>
-          <h3 class="course-title" data-out="c4-title"></h3>
           <p class="course-desc is-empty" data-out="c4-desc"></p>
           <div class="card-meta">
-            <div class="card-meta-item">
+            <div class="card-meta-item card-meta-date">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
               <span data-out="c4-date">TBC</span>
             </div>
@@ -874,15 +949,17 @@
         </div>
 
         <div class="course-card" data-course="5">
-          <div class="qr-mini is-empty" data-qr="5">
-            <div class="qr-mini-box"></div>
-            <div class="qr-mini-label">Scan to book</div>
+          <div class="card-diamond"></div>
+          <div class="card-head">
+            <div class="date-tile" data-tile="5">
+              <span class="date-tile-day"></span>
+              <span class="date-tile-month"></span>
+            </div>
+            <h3 class="course-title" data-out="c5-title"></h3>
           </div>
-          <div class="accent-rule"></div>
-          <h3 class="course-title" data-out="c5-title"></h3>
           <p class="course-desc is-empty" data-out="c5-desc"></p>
           <div class="card-meta">
-            <div class="card-meta-item">
+            <div class="card-meta-item card-meta-date">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
               <span data-out="c5-date">TBC</span>
             </div>
@@ -894,15 +971,17 @@
         </div>
 
         <div class="course-card" data-course="6">
-          <div class="qr-mini is-empty" data-qr="6">
-            <div class="qr-mini-box"></div>
-            <div class="qr-mini-label">Scan to book</div>
+          <div class="card-diamond"></div>
+          <div class="card-head">
+            <div class="date-tile" data-tile="6">
+              <span class="date-tile-day"></span>
+              <span class="date-tile-month"></span>
+            </div>
+            <h3 class="course-title" data-out="c6-title"></h3>
           </div>
-          <div class="accent-rule"></div>
-          <h3 class="course-title" data-out="c6-title"></h3>
           <p class="course-desc is-empty" data-out="c6-desc"></p>
           <div class="card-meta">
-            <div class="card-meta-item">
+            <div class="card-meta-item card-meta-date">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4C6272" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
               <span data-out="c6-date">TBC</span>
             </div>
